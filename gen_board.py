@@ -134,6 +134,19 @@ class Peg:
                 self.won = True
 
             self.dfs()
+
+    def A_Star(self):
+        self.frontier
+        last_move = self.completed_moves[-1]
+
+        goal_cost = 0
+        
+        while self.won == False:
+            # get the possible moves
+            valid_moves = self.check_move()
+
+            # get next move from the frontier
+            move = self.frontier.pop()
     
 if __name__ == "__main__":
     sys.setrecursionlimit(2000)
