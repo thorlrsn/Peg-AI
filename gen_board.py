@@ -1,12 +1,23 @@
 import numpy as np
 import time
 import sys
+from PrettyPrintTree.PrettyPrint import PrettyPrintTree
+
+class Tree:
+    def __init__(self, value):
+        self.value = value
+        self.children = []
+
+    def add_child(self, child):
+        self.children.append(child)
+        return child
 
 class State:
     def __init__(self, board_size):
         self.children: dict = {}
         self.board = np.full((board_size, board_size),3)
         self.parent: State = None
+        self.node_number: int = np.nan
 
 class Peg:
     def __init__(self):
@@ -16,6 +27,7 @@ class Peg:
         self.frontier = []
         self.won = False
         self.state_dictionary = {}
+        self.nodes = []
 
         ## 0 1 2 3 4 
         #0 x x x x x
@@ -28,12 +40,13 @@ class Peg:
         # instantiate initial state and update nodes
         initial_state = State(self.board_size)
         self.state_dictionary[0] = initial_state
+        self.nodes.append(0)
 
         for i in range(self.board_size):
             initial_state.board[i,0:self.board_size-i] = 1
 
         # setting random empty position, will be hardcoded for development
-        self.state_dictionary[0].board[0,0] = 0
+        self.state_dictionary[0].board[1,2] = 0
 
         self.print_board(initial_state)
 
@@ -96,19 +109,17 @@ class Peg:
     def undo_move(self, state):
         print("UNDO")
         action = self.completed_moves.pop()
-        # parent_board = np.full((self.board_size, self.board_size),3)
-        # parent_board[action[0],action[1]] = 1
-        # parent_board[action[2],action[3]] = 1
-        # parent_board[action[4],action[5]] = 0
-        # self.print_board(parent_board)
         self.print_board(state)
-        self.completed_moves.pop()
-        
+
 
     # depth-first search
     def dfs(self):
         # get initial state
         parent_state = self.state_dictionary[0]
+
+        # pt = PrettyPrintTree(lambda x: x.children, lambda x: x.value)
+        # tree = Tree(1)
+        # child = tree.add_child(Tree(2))
         
         while self.won == False:
             # Starting by getting the possible moves
@@ -141,14 +152,19 @@ class Peg:
             parent_state.children = {key: new_state}
             new_state.parent = parent_state
             new_state.board = parent_state.board.copy()
+            self.nodes.append(self.nodes[-1] + 1)
 
             self.move(move, new_state)
-            parent_state = new_state
-            
+            parent_state = new_state 
+
             if self.num_pegs(new_state) == 1:
                 print("Solution :: ",self.completed_moves)
                 print("Length of solution :: ", len(self.completed_moves))
                 self.won = True
+
+            # pt(self.state_dictionary)
+            # print()
+            # print()
 
             # self.dfs()
 

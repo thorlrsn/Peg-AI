@@ -1,0 +1,3 @@
+[submodule "PrettyPrintTree"]
+	path = PrettyPrintTree
+	url = https://github.com/AharonSambol/PrettyPrintTree
