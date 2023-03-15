@@ -2,6 +2,15 @@ import numpy as np
 import time
 import sys
 
+class Tree:
+    def __init__(self, value):
+        self.val = value
+        self.children = []
+
+    def add_child(self, child):
+        self.children.append(child)
+        return child
+
 class State:
     def __init__(self, board_size):
         self.board_size: int = board_size
@@ -191,6 +200,104 @@ def Dijkstra(self):
         # get next move from the frontier
         move = self.frontier.pop()
     
+    def dfs2(self):
+        """
+        DOESNT WORK YET
+        """
+        while self.won == False:
+            # Starting by getting the possible moves
+            self.check_moves_and_add()
+
+            # If there are no possible moves, we have to move up the tree, tracing back our steps. This is done by 
+            # using the undo function
+            # if len(valid_moves) == 0:
+            #     self.undo_move()
+            #     valid_moves = self.check_move() # Gotta update the valid moves
+            #     while self.frontier[-1] not in valid_moves: # To make the newest frontier corresponds to a current valid move
+            #         self.undo_move()
+            #         valid_moves = self.check_move()
+            # else: # appending new nodes to our frontier
+            #     for ele in valid_moves:
+            #         self.frontier.append(ele)
+
+            # Getting the next move from the frontier
+            
+
+            for i in range(len(self.dictall[self.next_node]["Move"])):
+                # -1 means newest node
+                move = self.dictall[-1]["Move"][i]
+                # print("Moving to",move)
+                self.move(move)
+                self.current_path.append(move) 
+                self.check_moves_and_add()
+            # print(self.num_pegs())
+
+            if self.num_pegs() == 2:
+                print("Solution :: ",self.completed_moves)
+                print("Length of solution :: ", len(self.completed_moves))
+                self.won = True
+
+            else:
+                for i in range(len(self.dictall[self.next_node]["Move"])):
+                    self.undo_move()
+                    self.current_path = []
+
+            self.next_node += 1
+            print(self.node_counter,self.next_node)
+            # print("Not goal state, moving to node", self.next_node)
+            # print("Node",self.next_node, "has the path", self.dictall[self.next_node]["Move"])
+            self.dfs2()
+
+
+    # breadth-first search
+    def bfs(self):
+        while self.won == False:
+            # Starting by getting the possible moves
+            self.check_moves_and_add()
+
+            # If there are no possible moves, we have to move up the tree, tracing back our steps. This is done by 
+            # using the undo function
+            # if len(valid_moves) == 0:
+            #     self.undo_move()
+            #     valid_moves = self.check_move() # Gotta update the valid moves
+            #     while self.frontier[-1] not in valid_moves: # To make the newest frontier corresponds to a current valid move
+            #         self.undo_move()
+            #         valid_moves = self.check_move()
+            # else: # appending new nodes to our frontier
+            #     for ele in valid_moves:
+            #         self.frontier.append(ele)
+
+            # Getting the next move from the frontier
+            
+
+            for i in range(len(self.dictall[self.next_node]["Move"])):
+                move = self.dictall[self.next_node]["Move"][i]
+                # print("Moving to",move)
+                self.move(move)
+                self.current_path.append(move) 
+                self.check_moves_and_add()
+            print(self.num_pegs())
+
+            if self.num_pegs() == 1:
+                print("Solution :: ",self.completed_moves)
+                print("Length of solution :: ", len(self.completed_moves))
+                self.won = True
+
+            else:
+                for i in range(len(self.dictall[self.next_node]["Move"])):
+                    self.undo_move()
+                    self.current_path = []
+                # print("Deleting node")
+                del self.dictall[self.next_node]
+                self.node_counter -= 1
+                
+
+            self.next_node += 1
+            print(self.node_counter,self.next_node)
+            # print("Not goal state, moving to node", self.next_node)
+            # print("Node",self.next_node, "has the path", self.dictall[self.next_node]["Move"])
+            self.bfs()
+
 if __name__ == "__main__":
     sys.setrecursionlimit(2000)
     board_size = 5
