@@ -14,6 +14,8 @@ class State:
 
         # Thor edit! init cost for state
         self.cost = 0
+        self.SAX = 0
+        self.effective_slack = 0
 
     def print_tree_nodes(self, level=0):
         print('\t' * level + repr(self.node_number))
@@ -63,6 +65,10 @@ class Peg:
         self.initial_state.board[self.initial_empty_space[0], self.initial_empty_space[1]] = 0
         self.initial_state.node_number = 0
         self.nodes[self.initial_state.node_number] = self.initial_state
+        self.initial_state.SAX = self.calculate_SAX(self.initial_state)
+        
+        # if self.initial_empty_space == [0,0] or self.initial_empty_space == [0, 4] or self.initial_empty_space == [4, 0]:
+        #     self.initial_state.SAX += 1
 
     def create_new_node(self, action: list, cost: int, parent: State, strategy: str):
         '''Creates a new instance of State and adds it to the dictionary of nodes'''
@@ -73,6 +79,20 @@ class Peg:
         new_state.parent = parent
         new_state.board = parent.board.copy()
         new_state.board = self.move(action, new_state)
+        # self.print_last_board()
+
+        # calculate effective slack
+        new_state.SAX = self.calculate_SAX(new_state)
+        new_state.effective_slack = self.initial_state.SAX - new_state.SAX
+        new_state.print_board(new_state)
+        print("calc effective slack:: ", self.initial_state.SAX, "-", new_state.SAX)
+        if new_state.parent == self.initial_state:
+            if self.initial_empty_space == [0,0] or self.initial_empty_space == [0, 4] or self.initial_empty_space == [4, 0]:
+                new_state.effective_slack += 1
+        # print('-----')
+        print("effective slack",new_state.effective_slack)
+        # print(new_state.SAX)
+        # print("effective slack",effective_slack)
         
         # Thor edit! 
         new_state.cost = new_state.parent.cost + cost
@@ -94,9 +114,30 @@ class Peg:
             elif strategy == 'cost':
                 self.frontier.append(new_state)
                 self.frontier_cost[new_state.node_number] = new_state.cost
+            elif strategy == 'SAX':
+                if new_state.effective_slack >= 0:
+                    # only add if effective SAX is not negative
+                    self.frontier.append(new_state)
+                    self.frontier_cost[new_state.node_number] = new_state.effective_slack
 
             # add as child to the parent node
             parent.children[new_state.node_number] = new_state
+
+    def calculate_SAX(self, state: State):
+        board = state.board
+        S = 0
+        A = 0
+        X = 0
+        if np.count_nonzero(board[1:3, 0] == 1) >= 2: S += 1
+        if np.count_nonzero(board[0, 1:3] == 1) >= 2: S +=1
+        if (np.count_nonzero(board[3,1] == 1) + np.count_nonzero(board[2,2]==1)+ np.count_nonzero(board[1,3]==1)) >= 2:
+            S += 1
+
+        A = board[2, 1] + board[1, 1] + board[1, 2]
+        X = board[0, 0] + board[4, 0] + board[0, 4] + board[0, 2] + board[2, 0] + board[2, 2] 
+        print("S =", S, " A =",A," X =", X)
+
+        return S + A - X
     
     def check_OoB(self, i: int, j: int):
         '''Checks if a suggested move is out of bounds (OoB)'''
@@ -231,8 +272,10 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
     elif strategy == 'cost':
         game.frontier.append(game.initial_state)
         game.frontier_cost[game.initial_state.node_number] = np.Inf
-        
-
+    
+    elif strategy == 'SAX':
+        game.frontier.append(game.initial_state)
+        game.frontier_cost[game.initial_state.node_number] = 0
 
     # while len(game.expanded_states) < 20:
     while game.won == False:
@@ -253,6 +296,23 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
                 if level >= deepest_level:
                     cheapest_state = temp_state
             state = cheapest_state
+            del game.frontier_cost[state.node_number]
+
+        elif strategy == 'SAX':
+            list_of_costs = [max(game.frontier_cost, key=game.frontier_cost.get)]
+            cheapest_state = None # maximising now
+            deepest_level = 0
+            for key in list_of_costs:
+                temp_state = game.nodes[key]
+                game.get_completed_moves(temp_state)
+                level = len(game.moves_to_win)
+                # print('-----')
+                # print('effective slack: ', temp_state.effective_slack)
+
+                if level >= deepest_level:
+                    cheapest_state = temp_state
+            state = cheapest_state
+            # game.print_last_board()
             del game.frontier_cost[state.node_number]
         
         game.expanded_states.append(state.board)
@@ -287,7 +347,10 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
             # dead end branch
             # print('dead end')
             del game.nodes[state.node_number]
-            game.frontier_cost[state.parent.node_number] = state.parent.cost
+            if strategy == 'cost':
+                game.frontier_cost[state.parent.node_number] = state.parent.cost
+            elif strategy == 'SAX':
+                game.frontier_cost[state.parent.node_number] = state.parent.effective_slack
 
         # game.get_completed_moves()
         # print('---------')
@@ -398,10 +461,10 @@ def Dijkstra(self):
 
 if __name__ == "__main__":
     sys.setrecursionlimit(2000)
-    board_size = 4
-    empty_space = [0, 0]
+    board_size = 5
+    empty_space = [0, 4]
 
-    strategy = 'cost'
+    strategy = 'SAX'
 
     # play game with Graph Search
     graph_search(board_size, empty_space, strategy)
