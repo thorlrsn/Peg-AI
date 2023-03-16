@@ -1,7 +1,6 @@
 import numpy as np
 import time
 import sys
-from PrettyPrint import PrettyPrintTree
 
 class Tree:
     def __init__(self, value):
