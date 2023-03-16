@@ -125,6 +125,7 @@ class Peg:
         return state.board
 
     def get_completed_moves(self):
+        self.moves_to_win = []
         # last state
         keys = list(self.nodes.keys())
         final_state = self.nodes[keys[-1]]
@@ -165,8 +166,9 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
         # enqueue
         game.frontier.appendleft(game.initial_state)
     
-    while game.frontier:
-        # get last state in frontier (dequeue/pop) and add to expanded_states
+    # while len(game.expanded_states) < 20:
+    while game.won == False:
+        # get last state in frontier (dequeue/pop) and add to expanded_states and path to win
         state = game.frontier.pop()
         game.expanded_states.append(state.board)
 
@@ -184,16 +186,33 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
             print("\nGAME PLAY")
             game.print_completed_moves()
             return
+        else:
+            game.get_completed_moves()
+            print('level: ' + str(len(game.moves_to_win)) + 'nodes visited: ' + str(len(game.expanded_states)))
         
         # get possible moves and if not already in frontier, create and add to frontier
         valid_moves = game.check_move(state)
         for move in valid_moves:
             if move not in game.frontier:
                 game.create_new_node(move, state, strategy)
+        if not valid_moves:
+            # dead end branch
+            # print('dead end')
+            del game.nodes[state.node_number]
 
-    print("\nGAME LOST - no solution")
-    print("\nprinting last board:\n")
-    game.print_last_board()
+        # game.get_completed_moves()
+        # print('---------')
+        # game.print_completed_moves()
+
+    # print("\nGAME LOST - no solution")
+    # print("\nprinting last board:\n")
+    # game.print_last_board()
+    print("printing tree of nodes:\n")
+    game.print_tree_nodes()
+    print("\nprinting tree of boards:\n")
+    game.print_tree_boards()
+    print("\nGAME PLAY")
+    game.print_completed_moves()
 
 def dfs(board_size: int, initial_empty_space: list[int]):
     """
@@ -292,7 +311,7 @@ if __name__ == "__main__":
     sys.setrecursionlimit(2000)
     board_size = 5
     empty_space = [0, 0]
-    strategy = 'bfs'
+    strategy = 'dfs'
 
     # play game with Graph Search
     graph_search(board_size, empty_space, strategy)
