@@ -184,12 +184,9 @@ class Peg:
         state.board[action[4],action[5]] = 1
         return state.board
 
-    def get_completed_moves(self):
+    def get_completed_moves(self, querystate):
         self.moves_to_win = []
-        # last state
-        keys = list(self.nodes.keys())
-        final_state = self.nodes[keys[-1]]
-        self.moves_to_win.append(final_state)
+        self.moves_to_win.append(querystate)
 
         # trace upwards via parents
         while self.moves_to_win[-1] != self.initial_state:
@@ -234,7 +231,7 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
 
         # check how many pins are left accounting for the lower triangle of the array
         if (state.board == 1).sum() == 1 + (game.board_size * (game.board_size - 1))/2:
-            game.get_completed_moves()
+            game.get_completed_moves(game.nodes[list(game.nodes.keys())[-1]])
             print((state.board==1).sum())
             print("\n\n---GAME WON---")
             # print("printing tree of nodes:\n")
@@ -247,8 +244,8 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
             game.print_completed_moves()
             return
         else:
-            game.get_completed_moves()
-            print('level: ' + str(len(game.moves_to_win)) + 'nodes visited: ' + str(len(game.expanded_states)))
+            game.get_completed_moves(game.nodes[list(game.nodes.keys())[-1]])
+            print('level: ' + str(len(game.moves_to_win)) + ' nodes visited: ' + str(len(game.expanded_states)))
         
         # get possible moves and if not already in frontier, create and add to frontier
         valid_moves, cost_moves = game.check_move(state)
@@ -294,7 +291,7 @@ def dfs(board_size: int, initial_empty_space: list[int]):
 
         # check how many pins are left accounting for the lower triangle of the array
         if (state.board == 1).sum() == 1 + (game.board_size * (game.board_size - 1))/2:
-            game.get_completed_moves()
+            game.get_completed_moves(game.nodes[list(game.nodes.keys())[-1]])
             print((state.board==1).sum())
             print("\n\n---GAME WON---")
             # print("printing tree of nodes:\n")
@@ -334,7 +331,7 @@ def bfs(board_size: int, initial_empty_space: list[int]):
 
         # check how many pins are left accounting for the lower triangle of the array
         if (state.board == 1).sum() == 1 + (bfsGame.board_size * (bfsGame.board_size - 1))/2:
-            bfsGame.get_completed_moves()
+            bfsGame.get_completed_moves(game.nodes[list(game.nodes.keys())[-1]])
             print((state.board==1).sum())
             print("\n\n---GAME WON---")
             # print("printing tree of nodes:\n")
@@ -371,7 +368,11 @@ def Dijkstra(self):
 if __name__ == "__main__":
     sys.setrecursionlimit(2000)
     board_size = 5
+<<<<<<< HEAD
     empty_space = [0, 4]
+=======
+    empty_space = [0, 0]
+>>>>>>> origin/Nicole
     strategy = 'dfs'
 
     # play game with Graph Search
