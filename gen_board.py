@@ -252,7 +252,7 @@ class Peg:
                 self.move(move)
                 self.current_path.append(move) 
                 self.check_moves_and_add()
-            print(self.num_pegs())
+            print(len(self.dictall[self.next_node]["Move"]))
 
             if self.num_pegs() == 1:
                 print("Solution :: ",self.completed_moves)
@@ -269,7 +269,7 @@ class Peg:
                 
 
             self.next_node += 1
-            print(self.node_counter,self.next_node)
+            # print(self.node_counter,self.next_node)
             # print("Not goal state, moving to node", self.next_node)
             # print("Node",self.next_node, "has the path", self.dictall[self.next_node]["Move"])
             self.bfs()
