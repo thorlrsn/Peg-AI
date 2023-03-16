@@ -37,6 +37,7 @@ class Peg:
         self.initial_empty_space: list[int] = empty_space
         self.moves_to_win: list[State] = []
         self.frontier: deque = deque([])
+        self.frontier_cost: dict = {}
         self.expanded_states: deque = deque([])
         self.won: bool = False
         self.nodes: dict = {}
@@ -223,6 +224,10 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
         # enqueue
         game.frontier.appendleft(game.initial_state)
     
+    elif strategy == 'cost':
+        game.frontier.append(game.initial_state)
+
+
     # while len(game.expanded_states) < 20:
     while game.won == False:
         # get last state in frontier (dequeue/pop) and add to expanded_states and path to win
@@ -331,7 +336,7 @@ def bfs(board_size: int, initial_empty_space: list[int]):
 
         # check how many pins are left accounting for the lower triangle of the array
         if (state.board == 1).sum() == 1 + (bfsGame.board_size * (bfsGame.board_size - 1))/2:
-            bfsGame.get_completed_moves(game.nodes[list(game.nodes.keys())[-1]])
+            bfsGame.get_completed_moves(bfsGame.nodes[list(bfsGame.nodes.keys())[-1]])
             print((state.board==1).sum())
             print("\n\n---GAME WON---")
             # print("printing tree of nodes:\n")
@@ -368,11 +373,8 @@ def Dijkstra(self):
 if __name__ == "__main__":
     sys.setrecursionlimit(2000)
     board_size = 5
-<<<<<<< HEAD
     empty_space = [0, 4]
-=======
-    empty_space = [0, 0]
->>>>>>> origin/Nicole
+
     strategy = 'dfs'
 
     # play game with Graph Search
