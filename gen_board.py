@@ -24,6 +24,7 @@ class Peg:
         self.dictall = {}
         self.node_counter = 0
         self.next_node = 0
+        self.node_del = 0
         self.current_path = []
         # self.pt = PrettyPrintTree(lambda x: x.children, lambda x: x.val)
         ## 0 1 2 3 4 
@@ -229,6 +230,8 @@ class Peg:
     def bfs(self):
         while self.won == False:
             # Starting by getting the possible moves
+            print("depth level :: ",len(self.dictall[self.next_node]["Move"]), "nodes deleted :: ",self.node_del, "nodes visited :: ", self.next_node, "num pegs :: ", self.num_pegs())
+
             self.check_moves_and_add()
 
             # If there are no possible moves, we have to move up the tree, tracing back our steps. This is done by 
@@ -252,12 +255,13 @@ class Peg:
                 self.move(move)
                 self.current_path.append(move) 
                 self.check_moves_and_add()
-            print(len(self.dictall[self.next_node]["Move"]))
 
             if self.num_pegs() == 1:
                 print("Solution :: ",self.completed_moves)
                 print("Length of solution :: ", len(self.completed_moves))
                 self.won = True
+            
+            
 
             else:
                 for i in range(len(self.dictall[self.next_node]["Move"])):
@@ -265,9 +269,11 @@ class Peg:
                     self.current_path = []
                 # print("Deleting node")
                 del self.dictall[self.next_node]
+                self.node_del += 1
                 self.node_counter -= 1
                 
-
+            
+            
             self.next_node += 1
             # print(self.node_counter,self.next_node)
             # print("Not goal state, moving to node", self.next_node)
