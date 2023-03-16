@@ -2,6 +2,7 @@ import numpy as np
 import time
 import sys
 from collections import deque
+import math
 
 class State:
     def __init__(self, board_size):
@@ -11,6 +12,8 @@ class State:
         self.parent: State = None
         self.node_number: int = None
 
+        # Thor edit! init cost for state
+        self.cost = 0
     def print_tree_nodes(self, level=0):
         print('\t' * level + repr(self.node_number))
         for child in self.children:
@@ -39,6 +42,9 @@ class Peg:
         self.nodes: dict = {}
         self.initial_state: State = None
 
+        # Thor edits!
+        self.mid_coor = (self.board_size/4)-0.25
+
         ## 0 1 2 3 4 
         #0 x x x x x
         #1 x x x x
@@ -56,7 +62,7 @@ class Peg:
         self.initial_state.node_number = 0
         self.nodes[self.initial_state.node_number] = self.initial_state
 
-    def create_new_node(self, action: list, parent: State, strategy: str):
+    def create_new_node(self, action: list, cost: int, parent: State, strategy: str):
         '''Creates a new instance of State and adds it to the dictionary of nodes'''
         # create instance of State
         new_state = State(self.board_size)
@@ -65,6 +71,9 @@ class Peg:
         new_state.parent = parent
         new_state.board = parent.board.copy()
         new_state.board = self.move(action, new_state)
+        
+        # Thor edit! 
+        new_state.cost = new_state.parent.cost + cost
 
         # check if state already exists
         if np.any(np.all(new_state.board == self.expanded_states, axis=1)):
@@ -94,6 +103,7 @@ class Peg:
     def check_move(self, state: State):
         # valid_moves = np.array([0,0,0,0,0,0])
         valid_moves = []
+        cost_moves = []
         # checking if each peg can move
         for i in range(self.board_size):
             for j in range(self.board_size):
@@ -101,23 +111,73 @@ class Peg:
                 # S we want (2,0) (i,j) to print((4,0))
                 if state.board[i,j] == 1 and i+2 < self.board_size and state.board[i+2,j] == 0 and state.board[i+1,j] == 1 and self.check_OoB(i, j):
                     valid_moves.append([i,j,i+1,j,i+2,j])
+                    dist_to_mid_ori = math.sqrt((i-self.mid_coor)**2 + (j-self.mid_coor)**2)
+                    dist_to_mid_des = math.sqrt(((i+2)-self.mid_coor)**2 + (j-self.mid_coor)**2)
+                    if [i+2,j] == [4,0]:
+                        cost_moves.append(3)
+                    elif dist_to_mid_ori < dist_to_mid_des:
+                        cost_moves.append(2)
+                    elif dist_to_mid_ori > dist_to_mid_des:
+                        cost_moves.append(1)
+                    
                 # N 
                 if state.board[i,j] == 1 and i-2 >= 0 and state.board[i-2,j] == 0 and state.board[i-1,j] == 1 and self.check_OoB(i, j):
                     valid_moves.append([i,j,i-1,j,i-2,j])
+                    dist_to_mid_ori = math.sqrt((i-self.mid_coor)**2 + (j-self.mid_coor)**2)
+                    dist_to_mid_des = math.sqrt(((i-2)-self.mid_coor)**2 + (j-self.mid_coor)**2)
+                    if [i-2,j] == [0,0]:
+                        cost_moves.append(3)
+                    elif dist_to_mid_ori < dist_to_mid_des:
+                        cost_moves.append(2)
+                    elif dist_to_mid_ori > dist_to_mid_des:
+                        cost_moves.append(1)
                 # E
                 if state.board[i,j] == 1 and j+2 < self.board_size and state.board[i,j+2] == 0 and state.board[i,j+1] == 1 and self.check_OoB(i, j):
                     valid_moves.append([i,j,i,j+1,i,j+2])
+                    dist_to_mid_ori = math.sqrt((i-self.mid_coor)**2 + (j-self.mid_coor)**2)
+                    dist_to_mid_des = math.sqrt((i-self.mid_coor)**2 + ((j+2)-self.mid_coor)**2)
+                    if [i,j+2] == [0,4]:
+                        cost_moves.append(3)
+                    elif dist_to_mid_ori < dist_to_mid_des:
+                        cost_moves.append(2)
+                    elif dist_to_mid_ori > dist_to_mid_des:
+                        cost_moves.append(1)
                 # W 
                 if state.board[i,j] == 1 and j-2 >= 0 and state.board[i,j-2] == 0 and state.board[i,j-1] == 1 and self.check_OoB(i, j):
                     valid_moves.append([i,j,i,j-1,i,j-2])
+                    dist_to_mid_ori = math.sqrt((i-self.mid_coor)**2 + (j-self.mid_coor)**2)
+                    dist_to_mid_des = math.sqrt((i-self.mid_coor)**2 + ((j-2)-self.mid_coor)**2)
+                    if [i,j-2] == [0,0]:
+                        cost_moves.append(3)
+                    elif dist_to_mid_ori < dist_to_mid_des:
+                        cost_moves.append(2)
+                    elif dist_to_mid_ori > dist_to_mid_des:
+                        cost_moves.append(1)
                 # SW
                 if state.board[i,j] == 1 and i+2 < self.board_size and j-2 >= 0 and state.board[i+2,j-2] == 0 and state.board[i+1,j-1] == 1 and self.check_OoB(i, j):
                     valid_moves.append([i,j,i+1,j-1,i+2,j-2])
+                    dist_to_mid_ori = math.sqrt((i-self.mid_coor)**2 + (j-self.mid_coor)**2)
+                    dist_to_mid_des = math.sqrt(((i+2)-self.mid_coor)**2 + ((j-2)-self.mid_coor)**2)
+                    if [i+2,j-2] == [4,0]:
+                        cost_moves.append(3)
+                    elif dist_to_mid_ori < dist_to_mid_des:
+                        cost_moves.append(2)
+                    elif dist_to_mid_ori > dist_to_mid_des:
+                        cost_moves.append(1)
                 # NE
                 if state.board[i,j] == 1 and i-2 >= 0 and j+2 < self.board_size and state.board[i-2,j+2] == 0 and state.board[i-1,j+1] == 1 and self.check_OoB(i, j):
                     valid_moves.append([i,j,i-1,j+1,i-2,j+2])
-        return valid_moves
-                
+                    dist_to_mid_ori = math.sqrt((i-self.mid_coor)**2 + (j-self.mid_coor)**2)
+                    dist_to_mid_des = math.sqrt(((i-2)-self.mid_coor)**2 + ((j+2)-self.mid_coor)**2)
+                    if [i-2,j+2] == [0,4]:
+                        cost_moves.append(3)
+                    elif dist_to_mid_ori < dist_to_mid_des:
+                        cost_moves.append(2)
+                    elif dist_to_mid_ori > dist_to_mid_des:
+                        cost_moves.append(1)
+
+        return valid_moves, cost_moves
+           
     def move(self, action, state: State):
         state.board[action[0],action[1]] = 0
         state.board[action[2],action[3]] = 0
@@ -191,10 +251,11 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
             print('level: ' + str(len(game.moves_to_win)) + 'nodes visited: ' + str(len(game.expanded_states)))
         
         # get possible moves and if not already in frontier, create and add to frontier
-        valid_moves = game.check_move(state)
-        for move in valid_moves:
+        valid_moves, cost_moves = game.check_move(state)
+        for move, cost in zip(valid_moves, cost_moves):
             if move not in game.frontier:
-                game.create_new_node(move, state, strategy)
+                game.create_new_node(move, cost, state, strategy)
+
         if not valid_moves:
             # dead end branch
             # print('dead end')
@@ -310,8 +371,8 @@ def Dijkstra(self):
 if __name__ == "__main__":
     sys.setrecursionlimit(2000)
     board_size = 5
-    empty_space = [0, 0]
-    strategy = 'bfs'
+    empty_space = [0, 4]
+    strategy = 'dfs'
 
     # play game with Graph Search
     graph_search(board_size, empty_space, strategy)
