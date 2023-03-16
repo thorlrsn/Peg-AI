@@ -1,15 +1,7 @@
 import numpy as np
 import time
 import sys
-
-class Tree:
-    def __init__(self, value):
-        self.val = value
-        self.children = []
-
-    def add_child(self, child):
-        self.children.append(child)
-        return child
+from collections import deque
 
 class State:
     def __init__(self, board_size):
@@ -40,8 +32,9 @@ class Peg:
     def __init__(self, board_size: int, empty_space: list[int]):
         self.board_size: int = board_size
         self.initial_empty_space: list[int] = empty_space
-        self.completed_moves: list[State] = []
-        self.frontier: list = []
+        self.moves_to_win: list[State] = []
+        self.frontier: deque = deque([])
+        self.expanded_states: deque = deque([])
         self.won: bool = False
         self.nodes: dict = {}
         self.initial_state: State = None
@@ -63,7 +56,7 @@ class Peg:
         self.initial_state.node_number = 0
         self.nodes[self.initial_state.node_number] = self.initial_state
 
-    def create_new_node(self, action: list, parent: State):
+    def create_new_node(self, action: list, parent: State, strategy: str):
         '''Creates a new instance of State and adds it to the dictionary of nodes'''
         # create instance of State
         new_state = State(self.board_size)
@@ -73,15 +66,23 @@ class Peg:
         new_state.board = parent.board.copy()
         new_state.board = self.move(action, new_state)
 
-        # use the dict keys to create a new node_number then add to dict
-        keys = list(self.nodes.keys())
-        new_state.node_number = keys[-1] + 1
-        self.nodes[new_state.node_number] = new_state
+        # check if state already exists
+        if np.any(np.all(new_state.board == self.expanded_states, axis=1)):
+            self.expanded_states.append(new_state.board)
+            if strategy == 'dfs':
+                # push
+                self.frontier.append(new_state)
+            elif strategy == 'bfs':
+                # enqueue
+                self.frontier.appendleft(new_state)
 
-        # add as child to the parent node
-        parent.children[new_state.node_number] = new_state
+            # use the dict keys to create a new node_number then add to dict
+            keys = list(self.nodes.keys())
+            new_state.node_number = keys[-1] + 1
+            self.nodes[new_state.node_number] = new_state
 
-        return new_state
+            # add as child to the parent node
+            parent.children[new_state.node_number] = new_state
     
     def check_OoB(self, i: int, j: int):
         '''Checks if a suggested move is out of bounds (OoB)'''
@@ -92,30 +93,30 @@ class Peg:
 
     def check_move(self, state: State):
         # valid_moves = np.array([0,0,0,0,0,0])
-        self.valid_moves = []
+        valid_moves = []
         # checking if each peg can move
         for i in range(self.board_size):
             for j in range(self.board_size):
                 # checking move
                 # S we want (2,0) (i,j) to print((4,0))
                 if state.board[i,j] == 1 and i+2 < self.board_size and state.board[i+2,j] == 0 and state.board[i+1,j] == 1 and self.check_OoB(i, j):
-                    self.valid_moves.append([i,j,i+1,j,i+2,j])
+                    valid_moves.append([i,j,i+1,j,i+2,j])
                 # N 
                 if state.board[i,j] == 1 and i-2 >= 0 and state.board[i-2,j] == 0 and state.board[i-1,j] == 1 and self.check_OoB(i, j):
-                    self.valid_moves.append([i,j,i-1,j,i-2,j])
+                    valid_moves.append([i,j,i-1,j,i-2,j])
                 # E
                 if state.board[i,j] == 1 and j+2 < self.board_size and state.board[i,j+2] == 0 and state.board[i,j+1] == 1 and self.check_OoB(i, j):
-                    self.valid_moves.append([i,j,i,j+1,i,j+2])
+                    valid_moves.append([i,j,i,j+1,i,j+2])
                 # W 
                 if state.board[i,j] == 1 and j-2 >= 0 and state.board[i,j-2] == 0 and state.board[i,j-1] == 1 and self.check_OoB(i, j):
-                    self.valid_moves.append([i,j,i,j-1,i,j-2])
+                    valid_moves.append([i,j,i,j-1,i,j-2])
                 # SW
                 if state.board[i,j] == 1 and i+2 < self.board_size and j-2 >= 0 and state.board[i+2,j-2] == 0 and state.board[i+1,j-1] == 1 and self.check_OoB(i, j):
-                    self.valid_moves.append([i,j,i+1,j-1,i+2,j-2])
+                    valid_moves.append([i,j,i+1,j-1,i+2,j-2])
                 # NE
                 if state.board[i,j] == 1 and i-2 >= 0 and j+2 < self.board_size and state.board[i-2,j+2] == 0 and state.board[i-1,j+1] == 1 and self.check_OoB(i, j):
-                    self.valid_moves.append([i,j,i-1,j+1,i-2,j+2])
-        return self.valid_moves
+                    valid_moves.append([i,j,i-1,j+1,i-2,j+2])
+        return valid_moves
                 
     def move(self, action, state: State):
         state.board[action[0],action[1]] = 0
@@ -127,12 +128,12 @@ class Peg:
         # last state
         keys = list(self.nodes.keys())
         final_state = self.nodes[keys[-1]]
-        self.completed_moves.append(final_state)
+        self.moves_to_win.append(final_state)
 
         # trace upwards via parents
-        while self.completed_moves[-1] != self.initial_state:
-            self.completed_moves.append(self.completed_moves[-1].parent)
-        self.completed_moves.reverse()
+        while self.moves_to_win[-1] != self.initial_state:
+            self.moves_to_win.append(self.moves_to_win[-1].parent)
+        self.moves_to_win.reverse()
 
     def print_tree_nodes(self):
         self.initial_state.print_tree_nodes()
@@ -145,49 +146,136 @@ class Peg:
         self.initial_state.print_board(self.nodes[keys[-1]])
 
     def print_completed_moves(self):
-        for move in self.completed_moves:
+        for move in self.moves_to_win:
             print()
             repr(self.initial_state.print_board(move))
 
-def dfs(board_size: int, initial_empty_space: list[int]):
-    '''Depth First Search dfsGame'''
-    dfsGame = Peg(board_size, initial_empty_space)
+def graph_search(board_size: int, initial_empty_space: list[int], strategy: str):
+    '''Graph Search Game'''
+    game = Peg(board_size, initial_empty_space)
 
     print("\nSTARTING BOARD\n")
-    dfsGame.print_last_board()
+    game.print_last_board()
 
     # start frontier with initial state
-    dfsGame.frontier.append(dfsGame.initial_state)
+    if strategy == 'dfs':
+        # push
+        game.frontier.append(game.initial_state)
+    elif strategy == 'bfs':
+        # enqueue
+        game.frontier.appendleft(game.initial_state)
     
-    while dfsGame.frontier:
-        # get last state in frontier
-        state = dfsGame.frontier.pop()
+    while game.frontier:
+        # get last state in frontier (dequeue/pop) and add to expanded_states
+        state = game.frontier.pop()
+        game.expanded_states.append(state.board)
 
         # check how many pins are left accounting for the lower triangle of the array
-        if (state.board == 1).sum() == 1 + (dfsGame.board_size * (dfsGame.board_size - 1))/2:
-            dfsGame.get_completed_moves()
+        if (state.board == 1).sum() == 1 + (game.board_size * (game.board_size - 1))/2:
+            game.get_completed_moves()
             print((state.board==1).sum())
             print("\n\n---GAME WON---")
             # print("printing tree of nodes:\n")
-            # dfsGame.print_tree_nodes()
+            # game.print_tree_nodes()
             # print("\nprinting tree of boards:\n")
-            # dfsGame.print_tree_boards()
+            # game.print_tree_boards()
             print("LAST BOARD\n")
-            dfsGame.print_last_board()
+            game.print_last_board()
             print("\nGAME PLAY")
-            dfsGame.print_completed_moves()
+            game.print_completed_moves()
             return
         
         # get possible moves and if not already in frontier, create and add to frontier
-        dfsGame.check_move(state)
-        for move in dfsGame.valid_moves:
-            if move not in dfsGame.frontier:
-                new_node = dfsGame.create_new_node(move, state)
-                dfsGame.frontier.append(new_node)
+        valid_moves = game.check_move(state)
+        for move in valid_moves:
+            if move not in game.frontier:
+                game.create_new_node(move, state, strategy)
 
     print("\nGAME LOST - no solution")
     print("\nprinting last board:\n")
-    dfsGame.print_last_board()
+    game.print_last_board()
+
+def dfs(board_size: int, initial_empty_space: list[int]):
+    """
+    DOESNT WORK YET
+    """
+    game = Peg(board_size, initial_empty_space)
+
+    print("\nSTARTING BOARD\n")
+    game.print_last_board()
+
+    # start frontier with initial state
+    game.frontier.append(game.initial_state)
+
+    while game.frontier:
+        # get last state in frontier and add to expanded_states
+        state = game.frontier.pop()
+        game.expanded_states.append(state.board)
+
+        # check how many pins are left accounting for the lower triangle of the array
+        if (state.board == 1).sum() == 1 + (game.board_size * (game.board_size - 1))/2:
+            game.get_completed_moves()
+            print((state.board==1).sum())
+            print("\n\n---GAME WON---")
+            # print("printing tree of nodes:\n")
+            # game.print_tree_nodes()
+            # print("\nprinting tree of boards:\n")
+            # game.print_tree_boards()
+            print("LAST BOARD\n")
+            game.print_last_board()
+            print("\nGAME PLAY")
+            game.print_completed_moves()
+            return
+        
+        # get possible moves and if not already in frontier, create and add to frontier
+        valid_moves = game.check_move(state)
+        for move in valid_moves:
+            if move not in game.frontier:
+                game.create_new_node(move, state)
+
+    print("\nGAME LOST - no solution")
+    print("\nprinting last board:\n")
+    game.print_last_board()
+
+def bfs(board_size: int, initial_empty_space: list[int]):
+    '''Bredth First Search game'''
+    bfsGame = Peg(board_size, initial_empty_space)
+
+    print("\nSTARTING BOARD\n")
+    bfsGame.print_last_board()
+
+    # start frontier with initial state
+    bfsGame.frontier.appendleft(bfsGame.initial_state)
+    
+    while bfsGame.frontier:
+        # get last state in frontier and add to start of expanded_states
+        state = bfsGame.frontier.pop()
+        bfsGame.expanded_states.append(state.board)
+
+        # check how many pins are left accounting for the lower triangle of the array
+        if (state.board == 1).sum() == 1 + (bfsGame.board_size * (bfsGame.board_size - 1))/2:
+            bfsGame.get_completed_moves()
+            print((state.board==1).sum())
+            print("\n\n---GAME WON---")
+            # print("printing tree of nodes:\n")
+            # game.print_tree_nodes()
+            # print("\nprinting tree of boards:\n")
+            # game.print_tree_boards()
+            print("LAST BOARD\n")
+            bfsGame.print_last_board()
+            print("\nGAME PLAY")
+            bfsGame.print_completed_moves()
+            return
+        
+        # get possible moves and if not already in frontier, create and add to frontier
+        valid_moves = bfsGame.check_move(state)
+        for move in valid_moves:
+            if move not in bfsGame.frontier:
+                bfsGame.create_new_node(move, state)
+
+    print("\nGAME LOST - no solution")
+    print("\nprinting last board:\n")
+    bfsGame.print_last_board()
 
 def Dijkstra(self):
     self.frontier
@@ -199,113 +287,12 @@ def Dijkstra(self):
 
         # get next move from the frontier
         move = self.frontier.pop()
-    
-    def dfs2(self):
-        """
-        DOESNT WORK YET
-        """
-        while self.won == False:
-            # Starting by getting the possible moves
-            self.check_moves_and_add()
-
-            # If there are no possible moves, we have to move up the tree, tracing back our steps. This is done by 
-            # using the undo function
-            # if len(valid_moves) == 0:
-            #     self.undo_move()
-            #     valid_moves = self.check_move() # Gotta update the valid moves
-            #     while self.frontier[-1] not in valid_moves: # To make the newest frontier corresponds to a current valid move
-            #         self.undo_move()
-            #         valid_moves = self.check_move()
-            # else: # appending new nodes to our frontier
-            #     for ele in valid_moves:
-            #         self.frontier.append(ele)
-
-            # Getting the next move from the frontier
-            
-
-            for i in range(len(self.dictall[self.next_node]["Move"])):
-                # -1 means newest node
-                move = self.dictall[-1]["Move"][i]
-                # print("Moving to",move)
-                self.move(move)
-                self.current_path.append(move) 
-                self.check_moves_and_add()
-            # print(self.num_pegs())
-
-            if self.num_pegs() == 2:
-                print("Solution :: ",self.completed_moves)
-                print("Length of solution :: ", len(self.completed_moves))
-                self.won = True
-
-            else:
-                for i in range(len(self.dictall[self.next_node]["Move"])):
-                    self.undo_move()
-                    self.current_path = []
-
-            self.next_node += 1
-            print(self.node_counter,self.next_node)
-            # print("Not goal state, moving to node", self.next_node)
-            # print("Node",self.next_node, "has the path", self.dictall[self.next_node]["Move"])
-            self.dfs2()
-
-
-    # breadth-first search
-    def bfs(self):
-        while self.won == False:
-            # Starting by getting the possible moves
-            self.check_moves_and_add()
-
-            # If there are no possible moves, we have to move up the tree, tracing back our steps. This is done by 
-            # using the undo function
-            # if len(valid_moves) == 0:
-            #     self.undo_move()
-            #     valid_moves = self.check_move() # Gotta update the valid moves
-            #     while self.frontier[-1] not in valid_moves: # To make the newest frontier corresponds to a current valid move
-            #         self.undo_move()
-            #         valid_moves = self.check_move()
-            # else: # appending new nodes to our frontier
-            #     for ele in valid_moves:
-            #         self.frontier.append(ele)
-
-            # Getting the next move from the frontier
-            
-
-            for i in range(len(self.dictall[self.next_node]["Move"])):
-                move = self.dictall[self.next_node]["Move"][i]
-                # print("Moving to",move)
-                self.move(move)
-                self.current_path.append(move) 
-                self.check_moves_and_add()
-            print(self.num_pegs())
-
-            if self.num_pegs() == 1:
-                print("Solution :: ",self.completed_moves)
-                print("Length of solution :: ", len(self.completed_moves))
-                self.won = True
-
-            else:
-                for i in range(len(self.dictall[self.next_node]["Move"])):
-                    self.undo_move()
-                    self.current_path = []
-                # print("Deleting node")
-                del self.dictall[self.next_node]
-                self.node_counter -= 1
-                
-
-            self.next_node += 1
-            print(self.node_counter,self.next_node)
-            # print("Not goal state, moving to node", self.next_node)
-            # print("Node",self.next_node, "has the path", self.dictall[self.next_node]["Move"])
-            self.bfs()
 
 if __name__ == "__main__":
     sys.setrecursionlimit(2000)
     board_size = 5
     empty_space = [0, 0]
+    strategy = 'bfs'
 
-    # play game with Depth First Search
-    dfs(board_size, empty_space)
-
-    
-    
-
+    # play game with Graph Search
+    graph_search(board_size, empty_space, strategy)
