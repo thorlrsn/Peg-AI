@@ -275,7 +275,7 @@ class Peg:
             self.bfs()
 
 if __name__ == "__main__":
-    sys.setrecursionlimit(8000)
+    sys.setrecursionlimit(80000)
     board = Peg()
     board.bfs()
 
