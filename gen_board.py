@@ -311,7 +311,7 @@ if __name__ == "__main__":
     sys.setrecursionlimit(2000)
     board_size = 5
     empty_space = [0, 0]
-    strategy = 'dfs'
+    strategy = 'bfs'
 
     # play game with Graph Search
     graph_search(board_size, empty_space, strategy)
