@@ -230,7 +230,6 @@ class Peg:
     def bfs(self):
         while self.won == False:
             # Starting by getting the possible moves
-            print("depth level :: ",len(self.dictall[self.next_node]["Move"]), "nodes deleted :: ",self.node_del, "nodes visited :: ", self.next_node, "num pegs :: ", self.num_pegs())
 
             self.check_moves_and_add()
 
@@ -249,12 +248,15 @@ class Peg:
             # Getting the next move from the frontier
             
 
+
             for i in range(len(self.dictall[self.next_node]["Move"])):
                 move = self.dictall[self.next_node]["Move"][i]
                 # print("Moving to",move)
                 self.move(move)
                 self.current_path.append(move) 
                 self.check_moves_and_add()
+
+            print("depth level :: ",len(self.dictall[self.next_node]["Move"]), "nodes visited and deleted :: ",self.node_del, "nodes to visit :: ", self.node_counter, "num pegs :: ", self.num_pegs())
 
             if self.num_pegs() == 1:
                 print("Solution :: ",self.completed_moves)
