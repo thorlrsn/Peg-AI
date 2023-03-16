@@ -14,6 +14,7 @@ class State:
 
         # Thor edit! init cost for state
         self.cost = 0
+
     def print_tree_nodes(self, level=0):
         print('\t' * level + repr(self.node_number))
         for child in self.children:
@@ -75,7 +76,12 @@ class Peg:
         
         # Thor edit! 
         new_state.cost = new_state.parent.cost + cost
-
+        
+        # use the dict keys to create a new node_number then add to dict
+        keys = list(self.nodes.keys())
+        new_state.node_number = keys[-1] + 1
+        self.nodes[new_state.node_number] = new_state
+        
         # check if state already exists
         if np.any(np.all(new_state.board == self.expanded_states, axis=1)):
             self.expanded_states.append(new_state.board)
@@ -85,11 +91,9 @@ class Peg:
             elif strategy == 'bfs':
                 # enqueue
                 self.frontier.appendleft(new_state)
-
-            # use the dict keys to create a new node_number then add to dict
-            keys = list(self.nodes.keys())
-            new_state.node_number = keys[-1] + 1
-            self.nodes[new_state.node_number] = new_state
+            elif strategy == 'cost':
+                self.frontier.append(new_state)
+                self.frontier_cost[new_state.node_number] = new_state.cost
 
             # add as child to the parent node
             parent.children[new_state.node_number] = new_state
@@ -226,12 +230,31 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
     
     elif strategy == 'cost':
         game.frontier.append(game.initial_state)
+        game.frontier_cost[game.initial_state.node_number] = np.Inf
+        
 
 
     # while len(game.expanded_states) < 20:
     while game.won == False:
+        
+        if strategy == 'dfs' or strategy == 'bfs':
         # get last state in frontier (dequeue/pop) and add to expanded_states and path to win
-        state = game.frontier.pop()
+            state = game.frontier.pop()
+        
+        elif strategy == 'cost':
+            # print(game.frontier_cost)
+            list_of_costs = [min(game.frontier_cost, key=game.frontier_cost.get)]
+            cheapest_state = None
+            deepest_level = 0
+            for key in list_of_costs:
+                temp_state = game.nodes[key]
+                game.get_completed_moves(temp_state)
+                level = len(game.moves_to_win)
+                if level >= deepest_level:
+                    cheapest_state = temp_state
+            state = cheapest_state
+            del game.frontier_cost[state.node_number]
+        
         game.expanded_states.append(state.board)
 
         # check how many pins are left accounting for the lower triangle of the array
@@ -250,18 +273,21 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
             return
         else:
             game.get_completed_moves(game.nodes[list(game.nodes.keys())[-1]])
-            print('level: ' + str(len(game.moves_to_win)) + ' nodes visited: ' + str(len(game.expanded_states)))
+            if len(game.expanded_states) % 100 == 0:
+                print('level: ' + str(len(game.moves_to_win)) + ' nodes visited: ' + str(len(game.expanded_states)), "min cost", state.cost)
         
         # get possible moves and if not already in frontier, create and add to frontier
         valid_moves, cost_moves = game.check_move(state)
         for move, cost in zip(valid_moves, cost_moves):
             if move not in game.frontier:
                 game.create_new_node(move, cost, state, strategy)
+                # game.print_last_board()
 
         if not valid_moves:
             # dead end branch
             # print('dead end')
             del game.nodes[state.node_number]
+            game.frontier_cost[state.parent.node_number] = state.parent.cost
 
         # game.get_completed_moves()
         # print('---------')
@@ -372,10 +398,10 @@ def Dijkstra(self):
 
 if __name__ == "__main__":
     sys.setrecursionlimit(2000)
-    board_size = 5
-    empty_space = [0, 4]
+    board_size = 4
+    empty_space = [0, 0]
 
-    strategy = 'dfs'
+    strategy = 'cost'
 
     # play game with Graph Search
     graph_search(board_size, empty_space, strategy)
