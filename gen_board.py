@@ -84,27 +84,27 @@ class Peg:
         # calculate effective slack
         new_state.SAX = self.calculate_SAX(new_state)
         new_state.effective_slack = self.initial_state.SAX - new_state.SAX
-        new_state.print_board(new_state)
-        print("calc effective slack:: ", self.initial_state.SAX, "-", new_state.SAX)
+        # new_state.print_board(new_state)
+        # print("calc effective slack:: ", self.initial_state.SAX, "-", new_state.SAX)
         if new_state.parent == self.initial_state:
             if self.initial_empty_space == [0,0] or self.initial_empty_space == [0, 4] or self.initial_empty_space == [4, 0]:
                 new_state.effective_slack += 1
         # print('-----')
-        print("effective slack",new_state.effective_slack)
+        # print("effective slack",new_state.effective_slack)
         # print(new_state.SAX)
         # print("effective slack",effective_slack)
         
         # Thor edit! 
         new_state.cost = new_state.parent.cost + cost
-        
-        # use the dict keys to create a new node_number then add to dict
-        keys = list(self.nodes.keys())
-        new_state.node_number = keys[-1] + 1
-        self.nodes[new_state.node_number] = new_state
-        
+               
         # check if state already exists
         if np.any(np.all(new_state.board == self.expanded_states, axis=1)):
-            self.expanded_states.append(new_state.board)
+             # use the dict keys to create a new node_number then add to dict
+            keys = list(self.nodes.keys())
+            new_state.node_number = keys[-1] + 1
+            self.nodes[new_state.node_number] = new_state
+
+            # self.expanded_states.append(new_state.board)
             if strategy == 'dfs':
                 # push
                 self.frontier.append(new_state)
@@ -135,7 +135,7 @@ class Peg:
 
         A = board[2, 1] + board[1, 1] + board[1, 2]
         X = board[0, 0] + board[4, 0] + board[0, 4] + board[0, 2] + board[2, 0] + board[2, 2] 
-        print("S =", S, " A =",A," X =", X)
+        # print("S =", S, " A =",A," X =", X)
 
         return S + A - X
     
@@ -150,6 +150,7 @@ class Peg:
         # valid_moves = np.array([0,0,0,0,0,0])
         valid_moves = []
         cost_moves = []
+        cost_frac = 20*len(self.moves_to_win)
         # checking if each peg can move
         for i in range(self.board_size):
             for j in range(self.board_size):
@@ -160,11 +161,11 @@ class Peg:
                     dist_to_mid_ori = math.sqrt((i-self.mid_coor)**2 + (j-self.mid_coor)**2)
                     dist_to_mid_des = math.sqrt(((i+2)-self.mid_coor)**2 + (j-self.mid_coor)**2)
                     if [i+2,j] == [4,0]:
-                        cost_moves.append(3)
+                        cost_moves.append(30-cost_frac)
                     elif dist_to_mid_ori < dist_to_mid_des:
-                        cost_moves.append(2)
-                    elif dist_to_mid_ori > dist_to_mid_des:
-                        cost_moves.append(1)
+                        cost_moves.append(20-cost_frac)
+                    elif dist_to_mid_ori >= dist_to_mid_des:
+                        cost_moves.append(10-cost_frac)
                     
                 # N 
                 if state.board[i,j] == 1 and i-2 >= 0 and state.board[i-2,j] == 0 and state.board[i-1,j] == 1 and self.check_OoB(i, j):
@@ -172,55 +173,55 @@ class Peg:
                     dist_to_mid_ori = math.sqrt((i-self.mid_coor)**2 + (j-self.mid_coor)**2)
                     dist_to_mid_des = math.sqrt(((i-2)-self.mid_coor)**2 + (j-self.mid_coor)**2)
                     if [i-2,j] == [0,0]:
-                        cost_moves.append(3)
+                        cost_moves.append(30-cost_frac)
                     elif dist_to_mid_ori < dist_to_mid_des:
-                        cost_moves.append(2)
-                    elif dist_to_mid_ori > dist_to_mid_des:
-                        cost_moves.append(1)
+                        cost_moves.append(20-cost_frac)
+                    elif dist_to_mid_ori >= dist_to_mid_des:
+                        cost_moves.append(10-cost_frac)
                 # E
                 if state.board[i,j] == 1 and j+2 < self.board_size and state.board[i,j+2] == 0 and state.board[i,j+1] == 1 and self.check_OoB(i, j):
                     valid_moves.append([i,j,i,j+1,i,j+2])
                     dist_to_mid_ori = math.sqrt((i-self.mid_coor)**2 + (j-self.mid_coor)**2)
                     dist_to_mid_des = math.sqrt((i-self.mid_coor)**2 + ((j+2)-self.mid_coor)**2)
                     if [i,j+2] == [0,4]:
-                        cost_moves.append(3)
+                        cost_moves.append(30-cost_frac)
                     elif dist_to_mid_ori < dist_to_mid_des:
-                        cost_moves.append(2)
-                    elif dist_to_mid_ori > dist_to_mid_des:
-                        cost_moves.append(1)
+                        cost_moves.append(20-cost_frac)
+                    elif dist_to_mid_ori >= dist_to_mid_des:
+                        cost_moves.append(10-cost_frac)
                 # W 
                 if state.board[i,j] == 1 and j-2 >= 0 and state.board[i,j-2] == 0 and state.board[i,j-1] == 1 and self.check_OoB(i, j):
                     valid_moves.append([i,j,i,j-1,i,j-2])
                     dist_to_mid_ori = math.sqrt((i-self.mid_coor)**2 + (j-self.mid_coor)**2)
                     dist_to_mid_des = math.sqrt((i-self.mid_coor)**2 + ((j-2)-self.mid_coor)**2)
                     if [i,j-2] == [0,0]:
-                        cost_moves.append(3)
+                        cost_moves.append(30-cost_frac)
                     elif dist_to_mid_ori < dist_to_mid_des:
-                        cost_moves.append(2)
-                    elif dist_to_mid_ori > dist_to_mid_des:
-                        cost_moves.append(1)
+                        cost_moves.append(20-cost_frac)
+                    elif dist_to_mid_ori >= dist_to_mid_des:
+                        cost_moves.append(10-cost_frac)
                 # SW
                 if state.board[i,j] == 1 and i+2 < self.board_size and j-2 >= 0 and state.board[i+2,j-2] == 0 and state.board[i+1,j-1] == 1 and self.check_OoB(i, j):
                     valid_moves.append([i,j,i+1,j-1,i+2,j-2])
                     dist_to_mid_ori = math.sqrt((i-self.mid_coor)**2 + (j-self.mid_coor)**2)
                     dist_to_mid_des = math.sqrt(((i+2)-self.mid_coor)**2 + ((j-2)-self.mid_coor)**2)
                     if [i+2,j-2] == [4,0]:
-                        cost_moves.append(3)
+                        cost_moves.append(30-cost_frac)
                     elif dist_to_mid_ori < dist_to_mid_des:
-                        cost_moves.append(2)
-                    elif dist_to_mid_ori > dist_to_mid_des:
-                        cost_moves.append(1)
+                        cost_moves.append(20-cost_frac)
+                    elif dist_to_mid_ori >= dist_to_mid_des:
+                        cost_moves.append(10-cost_frac)
                 # NE
                 if state.board[i,j] == 1 and i-2 >= 0 and j+2 < self.board_size and state.board[i-2,j+2] == 0 and state.board[i-1,j+1] == 1 and self.check_OoB(i, j):
                     valid_moves.append([i,j,i-1,j+1,i-2,j+2])
                     dist_to_mid_ori = math.sqrt((i-self.mid_coor)**2 + (j-self.mid_coor)**2)
                     dist_to_mid_des = math.sqrt(((i-2)-self.mid_coor)**2 + ((j+2)-self.mid_coor)**2)
                     if [i-2,j+2] == [0,4]:
-                        cost_moves.append(3)
+                        cost_moves.append(30-cost_frac)
                     elif dist_to_mid_ori < dist_to_mid_des:
-                        cost_moves.append(2)
-                    elif dist_to_mid_ori > dist_to_mid_des:
-                        cost_moves.append(1)
+                        cost_moves.append(20-cost_frac)
+                    elif dist_to_mid_ori >= dist_to_mid_des:
+                        cost_moves.append(10-cost_frac)
 
         return valid_moves, cost_moves
            
@@ -286,16 +287,20 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
         
         elif strategy == 'cost':
             # print(game.frontier_cost)
-            list_of_costs = [min(game.frontier_cost, key=game.frontier_cost.get)]
-            cheapest_state = None
-            deepest_level = 0
-            for key in list_of_costs:
-                temp_state = game.nodes[key]
-                game.get_completed_moves(temp_state)
-                level = len(game.moves_to_win)
-                if level >= deepest_level:
-                    cheapest_state = temp_state
-            state = cheapest_state
+            # list_of_costs = [min(game.frontier_cost, key=game.frontier_cost.get)]
+            # print(list_of_costs)
+            # cheapest_state = None
+            # deepest_level = 0
+            # for key in list_of_costs:
+            #     temp_state = game.nodes[key]
+            #     game.get_completed_moves(temp_state)
+            #     level = len(game.moves_to_win)
+            #     if level >= deepest_level:
+            #         cheapest_state = temp_state
+            key = min(game.frontier_cost, key=game.frontier_cost.get)
+            state = game.nodes[key]
+            game.frontier.remove(state)
+            # del game.frontier[state.node_number]
             del game.frontier_cost[state.node_number]
 
         elif strategy == 'SAX':
@@ -320,7 +325,7 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
         # check how many pins are left accounting for the lower triangle of the array
         if (state.board == 1).sum() == 1 + (game.board_size * (game.board_size - 1))/2:
             game.get_completed_moves(game.nodes[list(game.nodes.keys())[-1]])
-            print((state.board==1).sum())
+            print(((state.board == 1).sum() - (game.board_size * (game.board_size - 1))/2))
             print("\n\n---GAME WON---")
             # print("printing tree of nodes:\n")
             # game.print_tree_nodes()
@@ -330,18 +335,22 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
             game.print_last_board()
             print("\nGAME PLAY")
             game.print_completed_moves()
+            print('level: ' + str(len(game.moves_to_win)) + ' nodes visited: ' + str(len(game.expanded_states)),"frontier", len(game.frontier), "num pegs", (state.board == 1).sum() - (game.board_size * (game.board_size - 1))/2, "current cost", state.cost)
+
             return
         else:
             game.get_completed_moves(game.nodes[list(game.nodes.keys())[-1]])
-            if len(game.expanded_states) % 100 == 0:
-                print('level: ' + str(len(game.moves_to_win)) + ' nodes visited: ' + str(len(game.expanded_states)), "min cost", state.cost)
+
+            if ((state.board == 1).sum() - (game.board_size * (game.board_size - 1))/2) == 2:
+                game.print_last_board
+            if len(game.expanded_states) % 1 == 0:
+                print('level: ' + str(len(game.moves_to_win)) + ' nodes visited: ' + str(len(game.expanded_states)), "current node", state.node_number, "frontier", len(game.frontier), "num pegs", (state.board == 1).sum() - (game.board_size * (game.board_size - 1))/2, "current cost", state.cost)
         
         # get possible moves and if not already in frontier, create and add to frontier
         valid_moves, cost_moves = game.check_move(state)
         for move, cost in zip(valid_moves, cost_moves):
-            if move not in game.frontier:
-                game.create_new_node(move, cost, state, strategy)
-                # game.print_last_board()
+            game.create_new_node(move, cost, state, strategy)
+        game.print_last_board()
 
         if not valid_moves:
             # dead end branch
@@ -460,11 +469,19 @@ def Dijkstra(self):
         move = self.frontier.pop()
 
 if __name__ == "__main__":
+    
+    ## 0 1 2 3 4 
+    #0 x x x x x
+    #1 x x x x
+    #2 x x x
+    #3 x x
+    #4 x
+    #
     sys.setrecursionlimit(2000)
     board_size = 5
-    empty_space = [0, 4]
+    empty_space = [2, 1]
 
-    strategy = 'SAX'
+    strategy = 'cost'
 
     # play game with Graph Search
     graph_search(board_size, empty_space, strategy)
