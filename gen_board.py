@@ -82,9 +82,11 @@ class Peg:
             new_state.effective_slack = self.initial_state.SAX - new_state.SAX
             if new_state.parent == self.initial_state:
                 if self.initial_empty_space == [0,0] or self.initial_empty_space == [0, 4] or self.initial_empty_space == [4, 0]:
+                    # if initial position is in a corner
                     new_state.effective_slack += 1
-            
-        new_state.cost = new_state.parent.cost + cost
+            new_state.cost = new_state.effective_slack
+        else:
+            new_state.cost = new_state.parent.cost + cost
                
         # check if state already exists
         if np.any(np.all(new_state.board == self.expanded_states, axis=1)):
@@ -103,8 +105,8 @@ class Peg:
                 self.frontier.append(new_state)
                 self.frontier_cost.append(new_state.cost)
             elif strategy == 'SAX':
-                if new_state.effective_slack >= 0:
-                    # only add if effective SAX is not negative
+                if new_state.effective_slack >= 0 and new_state.SAX <= new_state.parent.SAX:
+                    # only add if effective slack is not negative and SAX does not increase
                     self.frontier[new_state.node_number] = new_state
                     self.frontier_cost[new_state.node_number] = (new_state.effective_slack)
             # add as child to the parent node
@@ -292,7 +294,7 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
                 if level > deepest_level:
                     cheapest_state = temp_state
             state = cheapest_state
-            del game.frontier[key]
+            del game.frontier[state.node_number]
             del game.frontier_cost[state.node_number]
         
         game.expanded_states.append(state.board)
@@ -358,4 +360,4 @@ if __name__ == "__main__":
     stategies = ['dfs', 'bfs', 'cost', 'SAX']
     st = time.time()
 
-    graph_search(board_size, empty_space, stategies[2])
+    graph_search(board_size, empty_space, stategies[3])
