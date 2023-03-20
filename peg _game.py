@@ -72,9 +72,6 @@ class Peg:
         self.nodes[self.initial_state.node_number] = self.initial_state
         if strategy == 'SAX':
             self.initial_state.SAX = self.calculate_SAX(self.initial_state)
-        
-        # if self.initial_empty_space == [0,0] or self.initial_empty_space == [0, 4] or self.initial_empty_space == [4, 0]:
-        #     self.initial_state.SAX += 1
 
     def create_new_node(self, action: list, cost: int, parent: State, strategy: str):
         '''Creates a new instance of State and adds it to the dictionary of nodes'''
@@ -85,20 +82,13 @@ class Peg:
         new_state.parent = parent
         new_state.board = parent.board.copy()
         new_state.board = self.move(action, new_state)
-        # self.print_last_board()
         if strategy == 'SAX':
             # calculate effective slack
             new_state.SAX = self.calculate_SAX(new_state)
             new_state.effective_slack = self.initial_state.SAX - new_state.SAX
-            # new_state.print_board(new_state)
-            # print("calc effective slack:: ", self.initial_state.SAX, "-", new_state.SAX)
             if new_state.parent == self.initial_state:
                 if self.initial_empty_space == [0,0] or self.initial_empty_space == [0, 4] or self.initial_empty_space == [4, 0]:
                     new_state.effective_slack += 1
-            # print('-----')
-            # print("effective slack",new_state.effective_slack)
-            # print(new_state.SAX)
-            # print("effective slack",effective_slack)
             
         # Thor edit! 
         new_state.cost = new_state.parent.cost + cost
@@ -142,7 +132,6 @@ class Peg:
 
         A = board[2, 1] + board[1, 1] + board[1, 2]
         X = board[0, 0] + board[4, 0] + board[0, 4] + board[0, 2] + board[2, 0] + board[2, 2] 
-        # print("S =", S, " A =",A," X =", X)
 
         return S + A - X
     
@@ -312,8 +301,6 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
                 temp_state = game.nodes[key]
                 game.get_completed_moves(temp_state)
                 level = len(game.moves_to_win)
-                # print('-----')
-                # print('effective slack: ', temp_state.effective_slack)
 
                 if level >= deepest_level:
                     cheapest_state = temp_state
@@ -328,10 +315,6 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
             game.get_completed_moves(game.nodes[list(game.nodes.keys())[-1]])
             print(((state.board == 1).sum() - (game.board_size * (game.board_size - 1))/2))
             print("\n\n---GAME WON---")
-            # print("printing tree of nodes:\n")
-            # game.print_tree_nodes()
-            # print("\nprinting tree of boards:\n")
-            # game.print_tree_boards()
             print("LAST BOARD\n")
             game.print_last_board()
             print("\nGAME PLAY")
@@ -348,11 +331,8 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
             
             if len(game.expanded_states) % 1000 == 0:
                 if strategy == 'dfs' or strategy == 'bfs':
-                    # game.print_last_board()
                     print('level: ' + str(len(game.moves_to_win)) + ' nodes visited: ' + str(len(game.expanded_states)), "current node", state.node_number, "frontier", len(game.frontier), "num pegs", (state.board == 1).sum() - (game.board_size * (game.board_size - 1))/2)
                 elif strategy == 'cost':
-                    # game.print_last_board()
-                    # print("all cost", game.frontier_cost)
                     print('level: ' + str(len(game.moves_to_win)) + ' nodes visited: ' + str(len(game.expanded_states)), "current node", state.node_number, "frontier", len(game.frontier), "num pegs", (state.board == 1).sum() - (game.board_size * (game.board_size - 1))/2, "current cost", state.cost)
         
         # get possible moves and if not already in frontier, create and add to frontier
@@ -371,103 +351,12 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
             elif strategy == 'SAX':
                 game.frontier_cost[state.parent.node_number] = state.parent.effective_slack
 
-        # game.get_completed_moves()
-        # print('---------')
-        # game.print_completed_moves()
-
-    # print("\nGAME LOST - no solution")
-    # print("\nprinting last board:\n")
-    # game.print_last_board()
     print("printing tree of nodes:\n")
     game.print_tree_nodes()
     print("\nprinting tree of boards:\n")
     game.print_tree_boards()
     print("\nGAME PLAY")
     game.print_completed_moves()
-
-def dfs(board_size: int, initial_empty_space: list[int]):
-    """
-    DOESNT WORK YET
-    """
-    game = Peg(board_size, initial_empty_space)
-
-    print("\nSTARTING BOARD\n")
-    game.print_last_board()
-
-    # start frontier with initial state
-    game.frontier.append(game.initial_state)
-
-    while game.frontier:
-        # get last state in frontier and add to expanded_states
-        state = game.frontier.pop()
-        game.expanded_states.append(state.board)
-
-        # check how many pins are left accounting for the lower triangle of the array
-        if (state.board == 1).sum() == 1 + (game.board_size * (game.board_size - 1))/2:
-            game.get_completed_moves(game.nodes[list(game.nodes.keys())[-1]])
-            print((state.board==1).sum())
-            print("\n\n---GAME WON---")
-            # print("printing tree of nodes:\n")
-            # game.print_tree_nodes()
-            # print("\nprinting tree of boards:\n")
-            # game.print_tree_boards()
-            print("LAST BOARD\n")
-            game.print_last_board()
-            print("\nGAME PLAY")
-            game.print_completed_moves()
-            return
-        
-        # get possible moves and if not already in frontier, create and add to frontier
-        valid_moves = game.check_move(state)
-        for move in valid_moves:
-            if move not in game.frontier:
-                game.create_new_node(move, state)
-
-    print("\nGAME LOST - no solution")
-    print("\nprinting last board:\n")
-    game.print_last_board()
-
-def bfs(board_size: int, initial_empty_space: list[int]):
-    '''Bredth First Search game'''
-    bfsGame = Peg(board_size, initial_empty_space)
-
-    print("\nSTARTING BOARD\n")
-    bfsGame.print_last_board()
-
-    # start frontier with initial state
-    bfsGame.frontier.appendleft(bfsGame.initial_state)
-    
-    while bfsGame.frontier:
-        # get last state in frontier and add to start of expanded_states
-        state = bfsGame.frontier.pop()
-        bfsGame.expanded_states.append(state.board)
-
-        # check how many pins are left accounting for the lower triangle of the array
-        if (state.board == 1).sum() == 1 + (bfsGame.board_size * (bfsGame.board_size - 1))/2:
-            bfsGame.get_completed_moves(bfsGame.nodes[list(bfsGame.nodes.keys())[-1]])
-            print((state.board==1).sum())
-            print("\n\n---GAME WON---")
-            # print("printing tree of nodes:\n")
-            # game.print_tree_nodes()
-            # print("\nprinting tree of boards:\n")
-            # game.print_tree_boards()
-            print("LAST BOARD\n")
-            bfsGame.print_last_board()
-            print("\nGAME PLAY")
-            bfsGame.print_completed_moves()
-            return
-        
-        # get possible moves and if not already in frontier, create and add to frontier
-        valid_moves = bfsGame.check_move(state)
-        for move in valid_moves:
-            if move not in bfsGame.frontier:
-                bfsGame.create_new_node(move, state)
-
-    print("\nGAME LOST - no solution")
-    print("\nprinting last board:\n")
-    bfsGame.print_last_board()
-
-def Dijkstra(self):
     self.frontier
     last_move = self.completed_moves[-1]
     
