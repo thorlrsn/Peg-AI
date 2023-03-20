@@ -37,8 +37,12 @@ class Peg:
         self.board_size: int = board_size
         self.initial_empty_space: list[int] = empty_space
         self.moves_to_win: list[State] = []
-        self.frontier: deque = deque([])
-        self.frontier_cost: deque = deque([])
+        if strategy == 'SAX':
+            self.frontier: dict = {}
+            self.frontier_cost: dict = {}
+        else:
+            self.frontier: deque = deque([])
+            self.frontier_cost: deque = deque([])
         self.expanded_states: deque = deque([])
         self.won: bool = False
         self.nodes: dict = {}
@@ -101,8 +105,8 @@ class Peg:
             elif strategy == 'SAX':
                 if new_state.effective_slack >= 0:
                     # only add if effective SAX is not negative
-                    self.frontier.append(new_state)
-                    self.frontier_cost[new_state.node_number] = new_state.effective_slack
+                    self.frontier[new_state.node_number] = new_state
+                    self.frontier_cost[new_state.node_number] = (new_state.effective_slack)
             # add as child to the parent node
             parent.children[new_state.node_number] = new_state
 
@@ -255,11 +259,11 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
     
     elif strategy == 'cost':
         game.frontier.append(game.initial_state)
-        game.frontier_cost.append(game.initial_state)
+        game.frontier_cost.append(game.initial_state.cost)
     
     elif strategy == 'SAX':
-        game.frontier.append(game.initial_state)
-        game.frontier_cost[game.initial_state.node_number] = 0
+        game.frontier[game.initial_state.node_number] = game.initial_state
+        game.frontier_cost[game.initial_state.node_number] = game.initial_state.cost
 
     # while len(game.expanded_states) < 20:
     while game.won == False:
@@ -278,16 +282,17 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
 
         elif strategy == 'SAX': 
             # get maximum SAX state
-            list_of_costs = [max(game.frontier_cost, key=game.frontier_cost.get)]
-            cheapest_state = None # maximising now
+            list_of_costs = [max(game.frontier_cost, key=game.frontier_cost.get)]  
+            cheapest_state = None
             deepest_level = 0
             for key in list_of_costs:
                 temp_state = game.nodes[key]
                 game.get_completed_moves(temp_state)
                 level = len(game.moves_to_win)
-                if level >= deepest_level:
+                if level > deepest_level:
                     cheapest_state = temp_state
             state = cheapest_state
+            del game.frontier[key]
             del game.frontier_cost[state.node_number]
         
         game.expanded_states.append(state.board)
@@ -308,7 +313,7 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
             et = time.time()
             if strategy == 'dfs' or strategy == 'bfs':
                 print('Compute time', round((et-st),2),'level: ' + str(len(game.moves_to_win)) + ' nodes visited: ' + str(len(game.expanded_states)), "current node", state.node_number, "frontier", len(game.frontier), "num pegs", (state.board == 1).sum() - (game.board_size * (game.board_size - 1))/2)
-            elif strategy == 'cost':
+            elif strategy == 'cost' or strategy == 'SAX':
                 print('Compute time', round((et-st),2),'level: ' + str(len(game.moves_to_win)) + ' nodes visited: ' + str(len(game.expanded_states)), "current node", state.node_number, "frontier", len(game.frontier), "num pegs", (state.board == 1).sum() - (game.board_size * (game.board_size - 1))/2, "current cost", state.cost)
     
             return
@@ -318,7 +323,7 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
             if len(game.expanded_states) % 1000 == 0:
                 if strategy == 'dfs' or strategy == 'bfs':
                     print('level: ' + str(len(game.moves_to_win)) + ' nodes visited: ' + str(len(game.expanded_states)), "current node", state.node_number, "frontier", len(game.frontier), "num pegs", (state.board == 1).sum() - (game.board_size * (game.board_size - 1))/2)
-                elif strategy == 'cost':
+                elif strategy == 'cost' or strategy == 'SAX':
                     print('level: ' + str(len(game.moves_to_win)) + ' nodes visited: ' + str(len(game.expanded_states)), "current node", state.node_number, "frontier", len(game.frontier), "num pegs", (state.board == 1).sum() - (game.board_size * (game.board_size - 1))/2, "current cost", state.cost)
         
         # get possible moves and if not already in frontier, create and add to frontier
@@ -328,16 +333,7 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
 
         if not valid_moves:
             # dead end branch
-            if strategy == 'dfs' or strategy == 'bfs':
-                del game.nodes[state.node_number]
-            elif strategy == 'cost':
-                del game.nodes[state.node_number]
-            elif strategy == 'SAX':
-                game.frontier_cost[state.parent.node_number] = state.parent.effective_slack
-
-        # game.get_completed_moves()
-        # print('---------')
-        # game.print_completed_moves()
+            del game.nodes[state.node_number]
 
     print("\nGAME LOST - no solution")
     print("\nprinting last board:\n")
@@ -359,7 +355,7 @@ if __name__ == "__main__":
 
     board_size = 5
     empty_space = [0, 0]
-    stategies = ['dfs', 'bfs', 'cost', 'Sax']
+    stategies = ['dfs', 'bfs', 'cost', 'SAX']
     st = time.time()
 
-    graph_search(board_size, empty_space, stategies[3])
+    graph_search(board_size, empty_space, stategies[2])
