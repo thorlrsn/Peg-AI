@@ -42,7 +42,8 @@ class Peg:
         self.initial_empty_space: list[int] = empty_space
         self.moves_to_win: list[State] = []
         self.frontier: deque = deque([])
-        self.frontier_cost: deque = deque([])
+        self.frontier_cost: list = []
+        # self.frontier_cost: deque = deque([])
 
         # self.frontier_cost: dict = {}
         self.expanded_states: deque = deque([])
@@ -487,10 +488,10 @@ if __name__ == "__main__":
     #
     sys.setrecursionlimit(2000)
 
-    board_size = 5
+    board_size = 4
     empty_space = [0, 0]
 
-    strategy = 'cost'
+    strategy = 'dfs'
 
     # play game with Graph Search
     st = time.time()
