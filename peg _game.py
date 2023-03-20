@@ -336,10 +336,6 @@ def graph_search(board_size: int, initial_empty_space: list[int], strategy: str)
     print("\nGAME LOST - no solution")
     print("\nprinting last board:\n")
     game.print_last_board()
-    # print("printing tree of nodes:\n")
-    # game.print_tree_nodes()
-    # print("\nprinting tree of boards:\n")
-    # game.print_tree_boards()
 
 if __name__ == "__main__":
     ## 0 1 2 3 4 
@@ -351,9 +347,9 @@ if __name__ == "__main__":
     
     sys.setrecursionlimit(2000)
 
-    board_size = 4
+    board_size = 5
     empty_space = [0, 0]
     stategies = ['dfs', 'bfs', 'cost', 'SAX']
     st = time.time()
 
-    graph_search(board_size, empty_space, stategies[3])
+    graph_search(board_size, empty_space, stategies[0])
